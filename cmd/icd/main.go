@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"image"
 	"image/color"
@@ -15,6 +14,7 @@ import (
 	"sync"
 
 	"github.com/lucasb-eyer/go-colorful"
+	"github.com/spf13/pflag"
 )
 
 // Config holds all the configuration parameters for the application,
@@ -56,29 +56,29 @@ func main() {
 func parseFlags() *Config {
 	cfg := &Config{}
 
-	flag.StringVar(&cfg.InputPath, "input", "", "Path to the input image.")
-	flag.StringVar(&cfg.OutputDirectory, "output", "./output", "Directory to save difference images.")
-	flag.IntVar(&cfg.UnitSize, "unitSize", 512, "The height and width of the square units to divide the image into.")
-	flag.Float64Var(&cfg.Threshold, "threshold", 3.0, "The CIEDE2000 Delta E threshold to consider units different.")
-	flag.IntVar(&cfg.CPUCores, "cpuCores", runtime.NumCPU(), "Number of CPU cores to use for processing.")
+	pflag.StringVarP(&cfg.InputPath, "input", "i", "", "Path to the input image.")
+	pflag.StringVarP(&cfg.OutputDirectory, "output", "o", "./output", "Directory to save difference images.")
+	pflag.IntVarP(&cfg.UnitSize, "unit-size", "s", 512, "The height and width of the square units to divide the image into.")
+	pflag.Float64VarP(&cfg.Threshold, "threshold", "t", 3.0, "The CIEDE2000 Delta E threshold to consider units different.")
+	pflag.IntVarP(&cfg.CPUCores, "cpu-cores", "c", runtime.NumCPU(), "Number of CPU cores to use for processing.")
 
-	flag.Parse()
+	pflag.Parse()
 	return cfg
 }
 
 // validateConfig checks if the provided configuration is valid.
 func validateConfig(cfg *Config) error {
 	if cfg.InputPath == "" {
-		return fmt.Errorf("-input flag is required")
+		return fmt.Errorf("--input/-i flag is required")
 	}
 	if _, err := os.Stat(cfg.InputPath); os.IsNotExist(err) {
 		return fmt.Errorf("input file does not exist: %s", cfg.InputPath)
 	}
 	if cfg.UnitSize <= 0 {
-		return fmt.Errorf("-unitSize must be a positive integer")
+		return fmt.Errorf("--unit-size must be a positive integer")
 	}
 	if cfg.CPUCores <= 0 {
-		return fmt.Errorf("-cpuCores must be a positive integer")
+		return fmt.Errorf("--cpu-cores must be a positive integer")
 	}
 	return nil
 }
