@@ -6,18 +6,30 @@ import (
 	"os"
 	"runtime"
 
+	"github.com/sokinpui/paper-cv/internal/logger"
 	"github.com/sokinpui/paper-cv/internal/comparator"
 	"github.com/spf13/pflag"
 )
 
 func main() {
+	logFile, err := logger.Init("comparator.log")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to initialize logger: %v\n", err)
+		os.Exit(1)
+	}
+	defer logFile.Close()
+
 	cfg := parseFlags()
-	if err := validateConfig(cfg); err != nil {
-		log.Fatalf("Configuration error: %v", err)
+	if err = validateConfig(cfg); err != nil {
+		log.Printf("Configuration error: %v", err)
+		fmt.Fprintf(os.Stderr, "Configuration error: %v\n", err)
+		os.Exit(1)
 	}
 
-	if err := comparator.Run(cfg); err != nil {
-		log.Fatalf("Application error: %v", err)
+	if err = comparator.Run(cfg); err != nil {
+		log.Printf("Application error: %v", err)
+		fmt.Fprintf(os.Stderr, "Application error: %v\n", err)
+		os.Exit(1)
 	}
 }
 

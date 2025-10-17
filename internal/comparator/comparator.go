@@ -24,10 +24,10 @@ func Run(cfg *Config) error {
 
 	units := splitImageIntoUnits(img, cfg.UnitSize)
 	if len(units) < 2 {
-		log.Println("Image resulted in fewer than two units. No comparison is possible.")
+		fmt.Println("Image resulted in fewer than two units. No comparison is possible.")
 		return nil
 	}
-	log.Printf("Divided image into %d units.", len(units))
+	fmt.Printf("Divided image into %d units.\n", len(units))
 
 	jobs := make(chan unitPair, len(units))
 	results := make(chan unitPair, len(units))
@@ -83,7 +83,12 @@ func Run(cfg *Config) error {
 
 	duration := time.Since(startTime)
 	log.Printf("Comparison of all units took %s.", duration)
-	log.Printf("Comparions per second: %.2f", float64(totalPairs)/duration.Seconds())
+	log.Printf("Comparisons per second: %.2f", float64(totalPairs)/duration.Seconds())
+
+	durationStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("202"))
+	speedStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("75"))
+	fmt.Printf("Total processing time: %s\n", durationStyle.Render(duration.String()))
+	fmt.Printf("Comparisons per second: %s\n", speedStyle.Render(fmt.Sprintf("%.2f", float64(totalPairs)/duration.Seconds())))
 
 	close(results)
 
