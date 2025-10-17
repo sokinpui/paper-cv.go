@@ -5,9 +5,10 @@ import (
 	"log"
 	"os"
 	"runtime"
+	"strings"
 
-	"github.com/sokinpui/paper-cv/internal/logger"
 	"github.com/sokinpui/paper-cv/internal/comparator"
+	"github.com/sokinpui/paper-cv/internal/logger"
 	"github.com/spf13/pflag"
 )
 
@@ -44,6 +45,7 @@ func parseFlags() *comparator.Config {
 	pflag.Float64VarP(&cfg.Threshold, "threshold", "t", 3.0, "The CIEDE2000 Delta E threshold to consider units different.")
 	pflag.IntVarP(&cfg.CPUCores, "cpu-cores", "c", runtime.NumCPU(), "Number of CPU cores to use for processing.")
 	pflag.StringVar(&cfg.ImageType, "type", "", "Type of the input image (e.g., jpeg, png, bmp). If not specified, it will be inferred.")
+	pflag.StringVarP(&cfg.Device, "device", "d", "cpu", "Device to use for processing (cpu, cuda, mps).")
 
 	pflag.Parse()
 	return cfg
@@ -69,6 +71,11 @@ func validateConfig(cfg *comparator.Config) error {
 		default:
 			return fmt.Errorf("unsupported image type: %s", cfg.ImageType)
 		}
+	}
+	switch strings.ToLower(cfg.Device) {
+	case "cpu", "cuda", "mps":
+	default:
+		return fmt.Errorf("unsupported device: %s. Supported devices are cpu, cuda, mps", cfg.Device)
 	}
 	return nil
 }

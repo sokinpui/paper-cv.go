@@ -9,4 +9,5 @@ type Config struct {
 	Threshold       float64
 	CPUCores        int
 	ImageType       string
+	Device          string
 }

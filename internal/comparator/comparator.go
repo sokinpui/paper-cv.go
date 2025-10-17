@@ -14,8 +14,13 @@ import (
 
 // Run is the main application logic.
 func Run(cfg *Config) error {
-	log.Printf("Starting image comparison with %d CPU cores.", cfg.CPUCores)
+	log.Printf("Starting image comparison with %d CPU cores on device '%s'.", cfg.CPUCores, cfg.Device)
 	runtime.GOMAXPROCS(cfg.CPUCores)
+
+	comparator, err := NewUnitComparator(cfg.Device)
+	if err != nil {
+		return err
+	}
 
 	img, err := loadImage(cfg.InputPath, cfg.ImageType)
 	if err != nil {
@@ -38,7 +43,7 @@ func Run(cfg *Config) error {
 	var wg sync.WaitGroup
 	for i := 0; i < cfg.CPUCores; i++ {
 		wg.Add(1)
-		go worker(&wg, jobs, results, cfg.Threshold, &processedPairs)
+		go worker(&wg, jobs, results, cfg.Threshold, &processedPairs, comparator)
 	}
 
 	var spinnerWg sync.WaitGroup
