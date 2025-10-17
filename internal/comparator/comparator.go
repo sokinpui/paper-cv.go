@@ -5,6 +5,7 @@ import (
 	"log"
 	"runtime"
 	"sync"
+	"time"
 )
 
 // Run is the main application logic.
@@ -35,27 +36,24 @@ func Run(cfg *Config) error {
 		go worker(&wg, jobs, results, cfg.Threshold)
 	}
 
-	// A separate goroutine to handle saving results to avoid contention.
-	var saveWg sync.WaitGroup
-	saveWg.Add(1)
-	go func() {
-		defer saveWg.Done()
-		saveDifferentPairs(results, cfg.OutputDirectory)
-	}()
-
 	// Generate all unique pairs and send them to the jobs channel.
 	log.Println("Generating and processing unit pairs...")
+	startTime := time.Now()
 	for i := 0; i < len(units); i++ {
 		for j := i + 1; j < len(units); j++ {
 			jobs <- unitPair{UnitA: units[i], UnitB: units[j]}
 		}
 	}
 	close(jobs)
-
 	wg.Wait()
-	close(results)
-	saveWg.Wait()
 
+	duration := time.Since(startTime)
+	log.Printf("Comparison of all units took %s.", duration)
+
+	close(results)
+
+	log.Println("Saving differing pairs...")
+	saveDifferentPairs(results, cfg.OutputDirectory)
 	log.Println("Processing complete.")
 	return nil
 }
