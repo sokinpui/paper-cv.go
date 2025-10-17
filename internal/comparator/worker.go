@@ -5,19 +5,21 @@ import (
 	"image/color"
 	"math"
 	"sync"
+	"sync/atomic"
 
 	"github.com/lucasb-eyer/go-colorful"
 )
 
 // worker is a goroutine that receives unitPairs, compares them, and sends
 // differing pairs to the results channel.
-func worker(wg *sync.WaitGroup, jobs <-chan unitPair, results chan<- unitPair, threshold float64) {
+func worker(wg *sync.WaitGroup, jobs <-chan unitPair, results chan<- unitPair, threshold float64, processed *int64) {
 	defer wg.Done()
 	for pair := range jobs {
 		diff := compareUnits(pair.UnitA.Img, pair.UnitB.Img)
 		if diff > threshold {
 			results <- pair
 		}
+		atomic.AddInt64(processed, 1)
 	}
 }
 

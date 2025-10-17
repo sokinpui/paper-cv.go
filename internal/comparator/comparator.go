@@ -5,7 +5,11 @@ import (
 	"log"
 	"runtime"
 	"sync"
+	"sync/atomic"
 	"time"
+
+	"github.com/charmbracelet/bubbles/spinner"
+	"github.com/charmbracelet/lipgloss"
 )
 
 // Run is the main application logic.
@@ -25,30 +29,61 @@ func Run(cfg *Config) error {
 	}
 	log.Printf("Divided image into %d units.", len(units))
 
-	// A channel to send pairs of units to worker goroutines.
 	jobs := make(chan unitPair, len(units))
-	// A channel to receive pairs that are found to be different.
 	results := make(chan unitPair, len(units))
+
+	var processedPairs int64
+	totalPairs := int64(len(units) * (len(units) - 1) / 2)
 
 	var wg sync.WaitGroup
 	for i := 0; i < cfg.CPUCores; i++ {
 		wg.Add(1)
-		go worker(&wg, jobs, results, cfg.Threshold)
+		go worker(&wg, jobs, results, cfg.Threshold, &processedPairs)
 	}
 
-	// Generate all unique pairs and send them to the jobs channel.
+	var spinnerWg sync.WaitGroup
+	spinnerWg.Add(1)
+	done := make(chan struct{})
+	go func() {
+		defer spinnerWg.Done()
+		s := spinner.New()
+		s.Spinner = spinner.Dot
+		s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
+		ticker := time.NewTicker(100 * time.Millisecond)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-done:
+				processed := atomic.LoadInt64(&processedPairs)
+				fmt.Printf("\r%s Comparison complete. %d/%d pairs processed.\n", "✓", processed, totalPairs)
+				return
+			case <-ticker.C:
+				s, _ = s.Update(spinner.TickMsg{})
+				processed := atomic.LoadInt64(&processedPairs)
+				fmt.Printf("\r%s Comparing units %d/%d...", s.View(), processed, totalPairs)
+			}
+		}
+	}()
+
 	log.Println("Generating and processing unit pairs...")
 	startTime := time.Now()
-	for i := 0; i < len(units); i++ {
-		for j := i + 1; j < len(units); j++ {
-			jobs <- unitPair{UnitA: units[i], UnitB: units[j]}
+	go func() {
+		defer close(jobs)
+		for i := 0; i < len(units); i++ {
+			for j := i + 1; j < len(units); j++ {
+				jobs <- unitPair{UnitA: units[i], UnitB: units[j]}
+			}
 		}
-	}
-	close(jobs)
+	}()
+
 	wg.Wait()
+	close(done)
+	spinnerWg.Wait()
 
 	duration := time.Since(startTime)
 	log.Printf("Comparison of all units took %s.", duration)
+	log.Printf("Comparions per second: %.2f", float64(totalPairs)/duration.Seconds())
 
 	close(results)
 
