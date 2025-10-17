@@ -12,7 +12,7 @@ func Run(cfg *Config) error {
 	log.Printf("Starting image comparison with %d CPU cores.", cfg.CPUCores)
 	runtime.GOMAXPROCS(cfg.CPUCores)
 
-	img, err := loadImage(cfg.InputPath)
+	img, err := loadImage(cfg.InputPath, cfg.ImageType)
 	if err != nil {
 		return fmt.Errorf("failed to load image: %w", err)
 	}

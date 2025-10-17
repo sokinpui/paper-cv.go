@@ -3,20 +3,35 @@ package comparator
 import (
 	"fmt"
 	"image"
-	_ "image/jpeg"
+	"golang.org/x/image/bmp"
+	"image/jpeg"
 	"image/png"
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 // loadImage opens and decodes an image from the given file path.
-func loadImage(path string) (image.Image, error) {
+func loadImage(path string, imageType string) (image.Image, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, fmt.Errorf("could not open file: %w", err)
 	}
 	defer file.Close()
+
+	if imageType != "" {
+		switch strings.ToLower(imageType) {
+		case "jpeg", "jpg":
+			return jpeg.Decode(file)
+		case "png":
+			return png.Decode(file)
+		case "bmp":
+			return bmp.Decode(file)
+		default:
+			return nil, fmt.Errorf("unsupported image type specified: %s", imageType)
+		}
+	}
 
 	img, _, err := image.Decode(file)
 	if err != nil {

@@ -31,6 +31,7 @@ func parseFlags() *comparator.Config {
 	pflag.IntVarP(&cfg.UnitSize, "unit-size", "s", 512, "The height and width of the square units to divide the image into.")
 	pflag.Float64VarP(&cfg.Threshold, "threshold", "t", 3.0, "The CIEDE2000 Delta E threshold to consider units different.")
 	pflag.IntVarP(&cfg.CPUCores, "cpu-cores", "c", runtime.NumCPU(), "Number of CPU cores to use for processing.")
+	pflag.StringVar(&cfg.ImageType, "type", "", "Type of the input image (e.g., jpeg, png, bmp). If not specified, it will be inferred.")
 
 	pflag.Parse()
 	return cfg
@@ -49,6 +50,13 @@ func validateConfig(cfg *comparator.Config) error {
 	}
 	if cfg.CPUCores <= 0 {
 		return fmt.Errorf("--cpu-cores must be a positive integer")
+	}
+	if cfg.ImageType != "" {
+		switch cfg.ImageType {
+		case "jpeg", "jpg", "png", "bmp":
+		default:
+			return fmt.Errorf("unsupported image type: %s", cfg.ImageType)
+		}
 	}
 	return nil
 }

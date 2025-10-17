@@ -8,4 +8,5 @@ type Config struct {
 	UnitSize        int
 	Threshold       float64
 	CPUCores        int
+	ImageType       string
 }
